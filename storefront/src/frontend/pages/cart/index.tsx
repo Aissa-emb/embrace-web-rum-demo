@@ -3,6 +3,7 @@
 
 import { NextPage } from 'next';
 import Head from 'next/head';
+import { useEffect } from 'react';
 import Layout from '../../components/Layout';
 import Recommendations from '../../components/Recommendations';
 import * as S from '../../styles/Cart.styled';
@@ -10,11 +11,28 @@ import CartDetail from '../../components/Cart/CartDetail';
 import EmptyCart from '../../components/Cart/EmptyCart';
 import { useCart } from '../../providers/Cart.provider';
 import AdProvider from '../../providers/Ad.provider';
+import { addBreadcrumb } from '../../utils/embrace';
+import { useCurrency } from '../../providers/Currency.provider';
+import { maybeCaptureCartPriceMismatchError } from '../../utils/controlledIssues';
 
 const Cart: NextPage = () => {
   const {
     cart: { items },
   } = useCart();
+  const { selectedCurrency } = useCurrency();
+
+  useEffect(() => {
+    addBreadcrumb('cart_viewed');
+
+    // Controlled issue: cart_price_mismatch
+    // Captures a realistic RangeError for cart subtotal normalization.
+    // The cart continues to render normally with server-provided totals.
+    maybeCaptureCartPriceMismatchError({
+      itemCount: items.length,
+      currency: selectedCurrency,
+      page: '/cart',
+    });
+  }, []);
 
   return (
     <AdProvider

@@ -7,6 +7,7 @@ import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
+import { logError } from '../utils/embrace';
 
 interface IContext {
   cart: IProductCart;
@@ -60,7 +61,18 @@ const CartProvider = ({ children }: IProps) => {
   });
 
   const addItem = useCallback(
-    (item: CartItem) => addCartMutation.mutateAsync({ ...item, currencyCode: selectedCurrency }),
+    async (item: CartItem) => {
+      try {
+        await addCartMutation.mutateAsync({ ...item, currencyCode: selectedCurrency });
+      } catch (err) {
+        logError('cart_update_failed', {
+          productId: item.productId,
+          quantity: item.quantity,
+          error: String(err),
+        });
+        throw err; // re-throw so callers can also handle it
+      }
+    },
     [addCartMutation, selectedCurrency]
   );
   const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(), [emptyCartMutation]);

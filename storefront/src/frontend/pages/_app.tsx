@@ -12,6 +12,8 @@ import FrontendTracer from '../utils/telemetry/FrontendTracer';
 import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
+import { initEmbrace } from '../utils/embrace';
+import { maybeCaptureUserPreferencesError, getDemoIssueVariant } from '../utils/controlledIssues';
 
 declare global {
   interface Window {
@@ -26,6 +28,21 @@ declare global {
 
 if (typeof window !== 'undefined') {
   FrontendTracer();
+  initEmbrace();
+
+  // Persist issue_variant from URL to localStorage for cross-page navigation
+  const _params = new URLSearchParams(window.location.search);
+  const _issueVariant = _params.get('issue_variant');
+  if (_issueVariant) {
+    localStorage.setItem('embrace_issue_variant', _issueVariant);
+  }
+  const _persona = _params.get('user_persona');
+  if (_persona) {
+    localStorage.setItem('embrace_persona', _persona);
+  }
+
+  // Controlled issue: user preferences parse failure on app startup
+  maybeCaptureUserPreferencesError({ page: window.location.pathname });
   if (window.location) {
     const session = SessionGateway.getSession();
 

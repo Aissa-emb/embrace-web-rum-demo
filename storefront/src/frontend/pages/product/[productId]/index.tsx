@@ -6,6 +6,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useCallback, useState, useEffect } from 'react';
+import { addBreadcrumb, logError, startEmbraceSpan, endEmbraceSpan } from '../../../utils/embrace';
 import { useQuery } from '@tanstack/react-query';
 import Ad from '../../../components/Ad';
 import Layout from '../../../components/Layout';
@@ -54,13 +55,28 @@ const ProductDetail: NextPage = () => {
     }
   ) as { data: Product };
 
+  // Embrace: product_viewed breadcrumb when data loads
+  useEffect(() => {
+    if (name && productId) {
+      addBreadcrumb(`product_viewed: ${name}`);
+    }
+  }, [name, productId]);
+
   const onAddItem = useCallback(async () => {
-    await addItem({
-      productId,
-      quantity,
-    });
-    push('/cart');
-  }, [addItem, productId, quantity, push]);
+    startEmbraceSpan('add_to_cart_flow');
+    try {
+      await addItem({
+        productId,
+        quantity,
+      });
+      addBreadcrumb(`product_added_to_cart: ${name || productId}`);
+      endEmbraceSpan('add_to_cart_flow', true);
+      push('/cart');
+    } catch (err) {
+      logError('cart_update_failed', { productId, quantity, error: String(err) });
+      endEmbraceSpan('add_to_cart_flow', false);
+    }
+  }, [addItem, productId, quantity, push, name]);
 
   return (
     <AdProvider

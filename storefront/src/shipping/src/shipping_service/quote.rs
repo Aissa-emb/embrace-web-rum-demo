@@ -3,10 +3,6 @@
 
 use core::fmt;
 use opentelemetry::global;
-use opentelemetry_instrumentation_actix_web::ClientExt;
-use std::{collections::HashMap, env};
-
-use anyhow::{Context, Result};
 use opentelemetry::{trace::get_active_span, KeyValue};
 use tracing::info;
 
@@ -37,46 +33,19 @@ pub async fn create_quote_from_count(count: u32) -> Result<Quote, tonic::Status>
 }
 
 async fn request_quote(count: u32) -> Result<f64, anyhow::Error> {
-    let client = awc::Client::new();
-    let quote_service_addr: String = format!(
-        "{}{}",
-        env::var("QUOTE_ADDR")
-            .unwrap_or_else(|_| "http://quote:8090".to_string())
-            .parse::<String>()
-            .expect("Invalid quote service address"),
-        "/getquote"
-    );
+    // Hardcoded shipping cost: base $8.99 + $1.50 per item.
+    // The external quote (PHP) service has been removed from this slimmed
+    // storefront build — this inline calculation replaces it.
+    let cost = 8.99 + (count as f64 * 1.50);
 
     info!(
-        name = "RequestingQuote",
-        quote_service_addr = quote_service_addr.as_str(),
-        message = "Requesting quote"
+        name = "ComputedShippingQuote",
+        item_count = count,
+        shipping_cost = cost,
+        message = "Computed shipping cost (hardcoded)"
     );
 
-    let mut reqbody = HashMap::new();
-    reqbody.insert("numberOfItems", count);
-
-    let mut response = client
-        .post(quote_service_addr)
-        .trace_request()
-        .send_json(&reqbody)
-        .await
-        .map_err(|err| anyhow::anyhow!("Failed to call quote service: {err}"))?;
-
-    let bytes = response
-        .body()
-        .await
-        .context("Failed to read response body from quote service")?;
-
-    let resp = std::str::from_utf8(&bytes)
-        .context("Failed to parse quote service response as UTF-8")?
-        .to_owned();
-
-    let f = resp
-        .parse::<f64>()
-        .context("Failed to parse quote value as f64")?;
-
-    Ok(f)
+    Ok(cost)
 }
 
 pub fn create_quote_from_float(value: f64) -> Quote {
