@@ -5,9 +5,9 @@ import { initSDK, session, log } from '@embrace-io/web-sdk';
 import { trace, SpanStatusCode, Span } from '@opentelemetry/api';
 import { getActiveIssue } from './issueTriggers';
 
-const EMBRACE_APP_ID = 'zxzxe';
-const APP_VERSION = 'otel-demo-local-0.1';
-const ENVIRONMENT = 'local';
+const EMBRACE_APP_ID = process.env.NEXT_PUBLIC_EMBRACE_APP_ID || '';
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || 'otel-demo-local-0.1';
+const ENVIRONMENT = process.env.NEXT_PUBLIC_ENVIRONMENT || 'local';
 
 let initialized = false;
 const activeSpans: Map<string, Span> = new Map();
@@ -18,6 +18,11 @@ const activeSpans: Map<string, Span> = new Map();
  */
 export function initEmbrace() {
   if (initialized || typeof window === 'undefined') return;
+
+  if (!EMBRACE_APP_ID) {
+    console.warn('[embrace] NEXT_PUBLIC_EMBRACE_APP_ID not set; skipping init');
+    return;
+  }
 
   initSDK({
     appID: EMBRACE_APP_ID,
