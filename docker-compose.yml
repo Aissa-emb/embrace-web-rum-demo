@@ -1,0 +1,32 @@
+# Embrace Web RUM Demo — Full Stack
+# Brings up the storefront + optionally the Playwright traffic generator.
+#
+# Usage:
+#   docker compose up                       # Storefront only
+#   docker compose --profile traffic up     # Storefront + traffic generator
+
+include:
+  - storefront/docker-compose.yml
+
+services:
+  traffic-gen:
+    build: ./traffic-gen
+    container_name: traffic-gen
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    restart: unless-stopped
+    environment:
+      - STOREFRONT_URL=http://frontend-proxy:8080
+      - WORKER_COUNT=${TRAFFIC_WORKER_COUNT:-5}
+      - SESSION_GAP_MS=${TRAFFIC_SESSION_GAP_MS:-2000}
+      - LOG_LEVEL=${TRAFFIC_LOG_LEVEL:-info}
+      - CHAOS_RATE=${TRAFFIC_CHAOS_RATE:-0.05}
+      - HEADLESS=true
+    depends_on:
+      frontend-proxy:
+        condition: service_started
+    networks:
+      - default
+    profiles: ["traffic"]

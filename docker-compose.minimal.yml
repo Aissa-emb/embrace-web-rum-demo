@@ -1,0 +1,5 @@
+# Embrace Web RUM Demo — Storefront Only (Minimal)
+# No traffic generator, no profiles. Just the storefront.
+
+include:
+  - storefront/docker-compose.yml

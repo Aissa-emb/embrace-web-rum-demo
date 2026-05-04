@@ -24,15 +24,8 @@ services:
 
   # AdService
   ad:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-ad
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-ad
     container_name: ad
-    build:
-      context: ./
-      dockerfile: ${AD_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-ad
-      args:
-        OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
     deploy:
       resources:
         limits:
@@ -45,7 +38,9 @@ services:
       - FLAGD_HOST
       - FLAGD_PORT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=ad
     depends_on:
       flagd:
@@ -54,13 +49,8 @@ services:
 
   # Cart service
   cart:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-cart
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-cart
     container_name: cart
-    build:
-      context: ./
-      dockerfile: ${CART_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-cart
     deploy:
       resources:
         limits:
@@ -74,6 +64,9 @@ services:
       - FLAGD_PORT
       - VALKEY_ADDR
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=cart
       - ASPNETCORE_URLS=http://*:${CART_PORT}
     depends_on:
@@ -85,13 +78,8 @@ services:
 
   # Checkout service
   checkout:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-checkout
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-checkout
     container_name: checkout
-    build:
-      context: ./
-      dockerfile: ${CHECKOUT_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-checkout
     deploy:
       resources:
         limits:
@@ -111,6 +99,9 @@ services:
       - SHIPPING_ADDR
       - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=checkout
     depends_on:
       cart:
@@ -131,15 +122,8 @@ services:
 
   # Currency service
   currency:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-currency
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-currency
     container_name: currency
-    build:
-      context: ./
-      dockerfile: ${CURRENCY_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-currency
-      args:
-        OPENTELEMETRY_CPP_VERSION: ${OPENTELEMETRY_CPP_VERSION}
     deploy:
       resources:
         limits:
@@ -152,18 +136,16 @@ services:
       - IPV6_ENABLED
       - VERSION=${IMAGE_VERSION}
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=currency
     logging: *logging
 
   # Email service
   email:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-email
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-email
     container_name: email
-    build:
-      context: ./
-      dockerfile: ${EMAIL_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-email
     deploy:
       resources:
         limits:
@@ -177,10 +159,13 @@ services:
       - FLAGD_HOST
       - FLAGD_PORT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=email
     logging: *logging
 
-  # Frontend
+  # Frontend (WE BUILT THIS, KEEP BUILD BLOCK)
   frontend:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend
     container_name: frontend
@@ -211,6 +196,7 @@ services:
       - PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - WEB_OTEL_SERVICE_NAME=frontend-web
+      - NEXT_PUBLIC_EMBRACE_APP_ID
       - FLAGD_HOST
       - FLAGD_PORT
     depends_on:
@@ -234,7 +220,7 @@ services:
         condition: service_started
     logging: *logging
 
-  # Frontend Proxy (Envoy)
+  # Frontend Proxy (Envoy) (WE MODIFIED THIS, KEEP BUILD BLOCK)
   frontend-proxy:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-proxy
     container_name: frontend-proxy
@@ -273,13 +259,8 @@ services:
 
   # image-provider
   image-provider:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-image-provider
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-image-provider
     container_name: image-provider
-    build:
-      context: ./
-      dockerfile: ${IMAGE_PROVIDER_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-image-provider
     deploy:
       resources:
         limits:
@@ -289,18 +270,16 @@ services:
       - "${IMAGE_PROVIDER_PORT}"
     environment:
       - IMAGE_PROVIDER_PORT
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=image-provider
     logging: *logging
 
   # Payment service
   payment:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-payment
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-payment
     container_name: payment
-    build:
-      context: ./
-      dockerfile: ${PAYMENT_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-payment
     deploy:
       resources:
         limits:
@@ -314,6 +293,9 @@ services:
       - FLAGD_HOST
       - FLAGD_PORT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=payment
     depends_on:
       flagd:
@@ -322,13 +304,8 @@ services:
 
   # Product Catalog service
   product-catalog:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
     container_name: product-catalog
-    build:
-      context: ./
-      dockerfile: ${PRODUCT_CATALOG_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
     deploy:
       resources:
         limits:
@@ -342,6 +319,9 @@ services:
       - FLAGD_PORT
       - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=product-catalog
       - OTEL_CONFIG_FILE=/otel-config.yml
       - OTEL_SEMCONV_STABILITY_OPT_IN=database
@@ -357,13 +337,8 @@ services:
 
   # Recommendation service
   recommendation:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-recommendation
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-recommendation
     container_name: recommendation
-    build:
-      context: ./
-      dockerfile: ${RECOMMENDATION_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-recommendation
     deploy:
       resources:
         limits:
@@ -378,6 +353,9 @@ services:
       - FLAGD_PORT
       - OTEL_PYTHON_LOG_CORRELATION=true
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=recommendation
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
     depends_on:
@@ -387,7 +365,7 @@ services:
         condition: service_started
     logging: *logging
 
-  # Shipping service
+  # Shipping service (WE MODIFIED THIS, KEEP BUILD BLOCK)
   shipping:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-shipping
     container_name: shipping
@@ -406,6 +384,9 @@ services:
     environment:
       - IPV6_ENABLED
       - SHIPPING_PORT
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=shipping
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
     logging: *logging
@@ -441,13 +422,8 @@ services:
 
   # Flagd UI for configuring the feature flag service
   flagd-ui:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-flagd-ui
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-flagd-ui
     container_name: flagd-ui
-    build:
-      context: ./
-      dockerfile: ${FLAGD_UI_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-flagd-ui
     deploy:
       resources:
         limits:
@@ -455,7 +431,11 @@ services:
     restart: always
     environment:
       - FLAGD_UI_PORT
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
       - OTEL_SERVICE_NAME=flagd-ui
       - SECRET_KEY_BASE=yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
       - PHX_HOST=localhost
