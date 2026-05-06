@@ -1,0 +1,78 @@
+name: Scheduled Traffic (Light)
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-scheduled
+  cancel-in-progress: true
+
+env:
+  EMBRACE_APP_ID: ${{ vars.EMBRACE_APP_ID }}
+  RUN_SOURCE: scheduled-light
+
+jobs:
+  generate-traffic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env <<EOF
+          EMBRACE_APP_ID=${{ vars.EMBRACE_APP_ID }}
+          TRAFFIC_WORKER_COUNT=2
+          TRAFFIC_SESSION_GAP_MS=2000
+          TRAFFIC_LOG_LEVEL=info
+          TRAFFIC_CHAOS_RATE=0.05
+          TRAFFIC_MAX_DURATION_S=600
+          RUN_SOURCE=scheduled-light
+          EOF
+
+      - name: Start storefront stack
+        run: docker compose up -d
+
+      - name: Wait for storefront to be healthy
+        run: |
+          echo "Waiting for frontend-proxy on port 8080..."
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080 > /dev/null 2>&1; then
+              echo "Storefront is healthy after ${i}s"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Storefront failed to start within 60s"
+              docker compose logs frontend frontend-proxy
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Start traffic generator
+        run: docker compose --profile traffic up -d traffic-gen
+
+      - name: Wait for traffic generation (~10 min)
+        run: |
+          echo "Traffic generator running for 600s..."
+          sleep 620
+          echo "Done waiting"
+
+      - name: Capture traffic logs
+        if: always()
+        run: docker compose logs traffic-gen > traffic.log 2>&1
+
+      - name: Upload traffic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traffic-log-scheduled
+          path: traffic.log
+          retention-days: 7
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile traffic down -v

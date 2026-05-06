@@ -38,11 +38,21 @@ export function initEmbrace() {
   const issue = params.get('issue') || 'none';
   const issueVariant = params.get('issue_variant') || 'none';
 
+  // Read run_source from URL (set by traffic-gen) or localStorage (persisted across nav)
+  const runSource =
+    params.get('run_source') ||
+    localStorage.getItem('embrace_run_source') ||
+    'organic';
+
   session.addProperty('user_persona', persona);
   session.addProperty('active_issue', issue);
   session.addProperty('issue_variant', issueVariant);
+  session.addProperty('run_source', runSource);
 
   // Persist to localStorage so values survive page navigation
+  if (params.has('run_source')) {
+    localStorage.setItem('embrace_run_source', runSource);
+  }
   if (params.has('issue')) {
     localStorage.setItem('embrace_issue', issue);
   }

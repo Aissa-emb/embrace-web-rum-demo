@@ -13,6 +13,7 @@ import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
 import { initEmbrace } from '../utils/embrace';
+import { injectWebVitalsChaos } from '../utils/webVitalsChaos';
 import { maybeCaptureUserPreferencesError, getDemoIssueVariant } from '../utils/controlledIssues';
 
 declare global {
@@ -29,6 +30,10 @@ declare global {
 if (typeof window !== 'undefined') {
   FrontendTracer();
   initEmbrace();
+  
+  // Inject randomized web vitals degradations and JS exceptions 
+  // so the RUM data looks like a realistic production environment.
+  injectWebVitalsChaos(1.0);
 
   // Persist issue_variant from URL to localStorage for cross-page navigation
   const _params = new URLSearchParams(window.location.search);

@@ -24,6 +24,11 @@ services:
       - LOG_LEVEL=${TRAFFIC_LOG_LEVEL:-info}
       - CHAOS_RATE=${TRAFFIC_CHAOS_RATE:-0.05}
       - HEADLESS=true
+      - MAX_SESSIONS=${TRAFFIC_MAX_SESSIONS:-0}
+      - MAX_DURATION_S=${TRAFFIC_MAX_DURATION_S:-0}
+      - RUN_SOURCE=${RUN_SOURCE:-local}
+      - DEVICE_OVERRIDE=${TRAFFIC_DEVICE_OVERRIDE:-}
+      - PERSONA_OVERRIDE=${TRAFFIC_PERSONA_OVERRIDE:-}
     depends_on:
       frontend-proxy:
         condition: service_started

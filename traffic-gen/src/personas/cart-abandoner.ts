@@ -22,24 +22,17 @@ export const cartAbandoner: Persona = {
     const card = rand(cards);
     await card.click();
 
-    await page.waitForSelector(S.productDetail, { timeout: 10000 });
+    await page.waitForSelector(S.productDetail, { timeout: 30000 });
     await sleep(jitter(4000));
 
     // Add to cart
-    const addBtn = await page.waitForSelector(S.productAddToCart, { timeout: 5000 });
+    const addBtn = await page.waitForSelector(S.productAddToCart, { timeout: 15000 });
     await addBtn.click();
     log.info('Added product to cart');
     await sleep(jitter(1500));
 
-    // Open cart dropdown
-    await page.click(S.cartIcon);
-    await page.waitForSelector(S.cartDropdown, { timeout: 5000 });
-    await sleep(jitter(1000));
-
-    // Go to cart page
-    const goToCart = await page.waitForSelector(S.cartGoToShopping, { timeout: 5000 });
-    await goToCart.click();
-    await page.waitForURL('**/cart', { timeout: 10000 });
+    // Navigate to cart page directly (dropdown is unreliable on mobile viewports)
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' });
 
     // Stare at the cart for a while... then abandon
     await sleep(jitter(6000));

@@ -1,5 +1,10 @@
 # Embrace Web RUM Demo
 
+[![Build](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/build.yml/badge.svg)](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/build.yml)
+[![Scheduled Traffic](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-scheduled.yml/badge.svg)](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-scheduled.yml)
+[![Persona Matrix](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-personas.yml/badge.svg)](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-personas.yml)
+[![Chaos](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-chaos.yml/badge.svg)](https://github.com/Aissa-emb/embrace-web-rum-demo/actions/workflows/ci-chaos.yml)
+
 A continuously-running ecommerce storefront that generates realistic [Embrace](https://embrace.io) Web RUM telemetry — Core Web Vitals (LCP, INP, CLS), JS errors, session timelines, and network resource timing — driven by a fleet of headless Chromium browsers under varied network and device conditions.
 
 ## Architecture
@@ -212,6 +217,20 @@ Expected. Since we removed the OTel Collector, some services log warnings about 
 
 ### First build is slow
 Backend services are pulled as pre-built Docker images. Only `frontend`, `frontend-proxy`, `shipping`, and `traffic-gen` are built from source. First build takes ~5 minutes; subsequent builds use cache.
+
+## Continuous Integration
+
+This repo uses GitHub Actions to continuously generate Embrace Web RUM sessions on the free tier. Five workflows run on schedules to produce ~700 sessions/day across all personas, devices, and chaos modes.
+
+| Workflow | Schedule | Purpose |
+|---|---|---|
+| [Build](.github/workflows/build.yml) | Push to `main` | Build & cache Docker images to GHCR |
+| [Scheduled Traffic](.github/workflows/ci-scheduled.yml) | Every 2h | Lightweight mixed traffic (2 workers, 10 min) |
+| [Persona Matrix](.github/workflows/ci-personas.yml) | Every 2h | Exercise each persona individually |
+| [Chaos](.github/workflows/ci-chaos.yml) | Every 3h | High chaos rate (60%) for error telemetry |
+| [Device Matrix](.github/workflows/ci-device-matrix.yml) | Manual | Test specific device profiles |
+
+See [`.github/CI_WORKFLOWS.md`](.github/CI_WORKFLOWS.md) for detailed documentation.
 
 ## Credits
 

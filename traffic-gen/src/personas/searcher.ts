@@ -33,7 +33,7 @@ export const searcher: Persona = {
       const card = rand(cards);
       await card.click();
 
-      await page.waitForSelector(S.productDetail, { timeout: 10000 });
+      await page.waitForSelector(S.productDetail, { timeout: 30000 });
       await sleep(jitter(randInt(4000, 10000)));
 
       // Scroll to read description
@@ -52,7 +52,7 @@ export const searcher: Persona = {
 
       // Go back home
       await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector(S.productCard, { timeout: 10000 });
+      await page.waitForSelector(S.productCard, { timeout: 30000 });
       await sleep(jitter(1000));
     }
 

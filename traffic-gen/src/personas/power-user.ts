@@ -28,7 +28,7 @@ export const powerUser: Persona = {
       const card = rand(cards);
       await card.click();
 
-      await page.waitForSelector(S.productDetail, { timeout: 10000 });
+      await page.waitForSelector(S.productDetail, { timeout: 30000 });
       await sleep(jitter(randInt(2000, 6000)));
 
       // Scroll to see full product
@@ -41,12 +41,9 @@ export const powerUser: Persona = {
         if (addBtn) {
           // Sometimes change quantity first
           if (Math.random() < 0.3) {
-            const qtyInput = await page.$(S.productQuantity);
-            if (qtyInput) {
-              await qtyInput.fill('');
-              await qtyInput.type(String(randInt(1, 3)), { delay: 100 });
-              await sleep(jitter(500));
-            }
+            const qty = String(randInt(1, 3));
+            await page.selectOption(S.productQuantity, qty);
+            await sleep(jitter(500));
           }
 
           await addBtn.click();
@@ -58,30 +55,30 @@ export const powerUser: Persona = {
 
       // Go back home
       await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector(S.productCard, { timeout: 10000 });
+      await page.waitForSelector(S.productCard, { timeout: 30000 });
       await sleep(jitter(1000));
     }
 
-    // Go to cart and checkout
-    await page.click(S.cartIcon);
-    await page.waitForSelector(S.cartDropdown, { timeout: 5000 });
-    await sleep(jitter(1000));
-
-    const goToCart = await page.waitForSelector(S.cartGoToShopping, { timeout: 5000 });
-    await goToCart.click();
-    await page.waitForURL('**/cart', { timeout: 10000 });
+    // Navigate to cart page directly (dropdown is unreliable on mobile viewports)
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' });
     await sleep(jitter(3000));
 
     // Fill checkout form
     await fillPowerUserCheckout(page, sleep, jitter);
 
     // Place order
-    const placeOrder = await page.waitForSelector(S.checkoutPlaceOrder, { timeout: 5000 });
+    const placeOrder = await page.waitForSelector(S.checkoutPlaceOrder, { timeout: 15000 });
     await placeOrder.click();
     log.info('Power user placed order');
 
-    await page.waitForURL('**/cart/checkout/**', { timeout: 15000 });
-    await sleep(jitter(3000));
+    // Wait for order confirmation (may timeout under heavy throttling — that's OK,
+    // the order was already placed and RUM data captured)
+    try {
+      await page.waitForURL('**/cart/checkout/**', { timeout: 30000, waitUntil: 'domcontentloaded' });
+      await sleep(jitter(3000));
+    } catch {
+      log.warn('Checkout confirmation page timed out (order was still placed)');
+    }
 
     log.info({ productsViewed: productsToView, productsAdded: added }, 'Power-user persona complete');
   },
@@ -98,20 +95,23 @@ async function fillPowerUserCheckout(
     { selector: S.checkoutZipCode, value: '10118' },
     { selector: S.checkoutCity, value: 'New York' },
     { selector: S.checkoutState, value: 'NY' },
-    { selector: S.checkoutCreditCardNumber, value: '4532-0153-4280-7832' },
+    { selector: S.checkoutCreditCardNumber, value: '4432-8015-6152-0454' },
     { selector: S.checkoutCreditCardCvv, value: '431' },
   ];
 
   for (const field of fields) {
-    const el = await page.waitForSelector(field.selector, { timeout: 5000 });
+    const el = await page.waitForSelector(field.selector, { timeout: 15000 });
     await el.fill('');
     await el.type(field.value, { delay: jitter(40) });
     await sleep(jitter(350));
   }
 
-  await page.selectOption(S.checkoutCountry, 'United States');
+  // Country is a text input, not a select
+  const countryEl = await page.waitForSelector(S.checkoutCountry);
+  await countryEl.fill('');
+  await countryEl.type('United States', { delay: jitter(40) });
   await sleep(jitter(200));
-  await page.selectOption(S.checkoutCreditCardExpMonth, 'March');
+  await page.selectOption(S.checkoutCreditCardExpMonth, '3');
   await sleep(jitter(200));
   await page.selectOption(S.checkoutCreditCardExpYear, '2028');
   await sleep(jitter(200));

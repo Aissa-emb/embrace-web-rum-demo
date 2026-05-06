@@ -1,24 +1,11 @@
 import { getConfig } from './config';
 import { createLogger } from './lib/logger';
-import { runWorker } from './worker';
+import { runWorker, requestShutdown } from './worker';
 
 const log = createLogger('main');
 
 async function main(): Promise<void> {
   const config = getConfig();
-
-  log.info(
-    {
-      workerCount: config.WORKER_COUNT,
-      storefrontUrl: config.STOREFRONT_URL,
-      sessionGapMs: config.SESSION_GAP_MS,
-      headless: config.HEADLESS,
-      chaosRate: config.CHAOS_RATE,
-      personaOverride: config.PERSONA_OVERRIDE || 'none',
-      singleRun: config.SINGLE_RUN,
-    },
-    'Starting traffic generator'
-  );
 
   // Parse CLI args for --persona=X --once --headed
   const args = process.argv.slice(2);
@@ -39,20 +26,57 @@ async function main(): Promise<void> {
     }
   }
 
+  log.info(
+    {
+      workerCount: config.WORKER_COUNT,
+      storefrontUrl: config.STOREFRONT_URL,
+      sessionGapMs: config.SESSION_GAP_MS,
+      headless: config.HEADLESS,
+      chaosRate: config.CHAOS_RATE,
+      personaOverride: config.PERSONA_OVERRIDE || 'none',
+      singleRun: config.SINGLE_RUN,
+      maxSessions: config.MAX_SESSIONS || 'unlimited',
+      maxDurationS: config.MAX_DURATION_S || 'unlimited',
+      runSource: config.RUN_SOURCE,
+      deviceOverride: config.DEVICE_OVERRIDE || 'none',
+    },
+    'Starting traffic generator'
+  );
+
+  // ---------------------------------------------------------------------------
+  // MAX_DURATION_S wall-clock timeout
+  // ---------------------------------------------------------------------------
+  if (config.MAX_DURATION_S > 0) {
+    const durationMs = config.MAX_DURATION_S * 1000;
+    log.info({ seconds: config.MAX_DURATION_S }, 'Will auto-stop after duration');
+
+    setTimeout(() => {
+      log.info('MAX_DURATION_S reached — requesting graceful shutdown');
+      requestShutdown();
+
+      // Force-exit after a grace period if workers don't finish
+      setTimeout(() => {
+        log.info('Grace period elapsed — force exiting');
+        process.exit(0);
+      }, 15000);
+    }, durationMs);
+  }
+
+  // ---------------------------------------------------------------------------
   // Spawn workers
+  // ---------------------------------------------------------------------------
   const workers: Promise<void>[] = [];
   for (let i = 0; i < config.WORKER_COUNT; i++) {
     workers.push(runWorker(i));
   }
 
-  // Graceful shutdown
+  // Graceful shutdown on SIGTERM/SIGINT
   let shuttingDown = false;
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
-    log.info('Received shutdown signal, waiting for current sessions to finish...');
-    // Workers will finish their current session and exit because
-    // we'd need a shared flag; for now, exit after a delay
+    log.info('Received shutdown signal, requesting worker shutdown...');
+    requestShutdown();
     setTimeout(() => {
       log.info('Force exiting');
       process.exit(0);
@@ -64,6 +88,7 @@ async function main(): Promise<void> {
 
   await Promise.all(workers);
   log.info('All workers finished');
+  process.exit(0);
 }
 
 main().catch((err) => {

@@ -1,1 +1,25 @@
+# Environment (root .env has real App ID; storefront/.env is tracked as demo defaults)
 .env
+!.env.example
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+
+# Next.js
+.next/
+out/
+
+# Traffic generator build output
+traffic-gen/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

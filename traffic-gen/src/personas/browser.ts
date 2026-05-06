@@ -33,7 +33,7 @@ export const browser: Persona = {
       await card.click();
 
       // Wait for product detail page
-      await page.waitForSelector(S.productDetail, { timeout: 10000 });
+      await page.waitForSelector(S.productDetail, { timeout: 30000 });
 
       // Read the product page
       await sleep(jitter(randInt(3000, 12000)));
@@ -46,7 +46,7 @@ export const browser: Persona = {
 
       // Go back to home
       await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector(S.productCard, { timeout: 10000 });
+      await page.waitForSelector(S.productCard, { timeout: 30000 });
       await sleep(jitter(1500));
     }
 

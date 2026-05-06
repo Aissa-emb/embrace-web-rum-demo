@@ -23,38 +23,34 @@ export const buyer: Persona = {
     await card.click();
 
     // View product detail
-    await page.waitForSelector(S.productDetail, { timeout: 10000 });
+    await page.waitForSelector(S.productDetail, { timeout: 30000 });
     await sleep(jitter(5000));
 
     // Add to cart
-    const addBtn = await page.waitForSelector(S.productAddToCart, { timeout: 5000 });
+    const addBtn = await page.waitForSelector(S.productAddToCart, { timeout: 15000 });
     await addBtn.click();
     log.info('Added product to cart');
     await sleep(jitter(1500));
 
-    // Open cart dropdown and go to shopping cart
-    await page.click(S.cartIcon);
-    await page.waitForSelector(S.cartDropdown, { timeout: 5000 });
-    await sleep(jitter(1000));
-
-    const goToCart = await page.waitForSelector(S.cartGoToShopping, { timeout: 5000 });
-    await goToCart.click();
-
-    // Wait for cart/checkout page
-    await page.waitForURL('**/cart', { timeout: 10000 });
+    // Navigate to cart page directly (dropdown button is unreliable on mobile viewports)
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' });
     await sleep(jitter(2000));
 
     // Fill checkout form
     await fillCheckoutForm(page, sleep, jitter);
 
     // Place order
-    const placeOrder = await page.waitForSelector(S.checkoutPlaceOrder, { timeout: 5000 });
+    const placeOrder = await page.waitForSelector(S.checkoutPlaceOrder, { timeout: 15000 });
     await placeOrder.click();
     log.info('Placed order');
 
-    // Wait for order confirmation
-    await page.waitForURL('**/cart/checkout/**', { timeout: 15000 });
-    await sleep(jitter(3000));
+    // Wait for order confirmation (may timeout under throttling — order still placed)
+    try {
+      await page.waitForURL('**/cart/checkout/**', { timeout: 30000, waitUntil: 'domcontentloaded' });
+      await sleep(jitter(3000));
+    } catch {
+      log.warn('Checkout confirmation page timed out (order was still placed)');
+    }
 
     log.info('Buyer persona complete — order placed');
   },
@@ -76,18 +72,20 @@ async function fillCheckoutForm(
   ];
 
   for (const field of fields) {
-    const el = await page.waitForSelector(field.selector, { timeout: 5000 });
+    const el = await page.waitForSelector(field.selector, { timeout: 15000 });
     await el.fill('');
     await el.type(field.value, { delay: jitter(50) });
     await sleep(jitter(400));
   }
 
-  // Select country
-  await page.selectOption(S.checkoutCountry, 'United States');
+  // Country is a text input, not a select
+  const countryEl = await page.waitForSelector(S.checkoutCountry);
+  await countryEl.fill('');
+  await countryEl.type('United States', { delay: jitter(50) });
   await sleep(jitter(300));
 
-  // Select expiration month and year
-  await page.selectOption(S.checkoutCreditCardExpMonth, 'January');
+  // Select expiration month and year (use option values, not display text)
+  await page.selectOption(S.checkoutCreditCardExpMonth, '1');
   await sleep(jitter(200));
   await page.selectOption(S.checkoutCreditCardExpYear, '2030');
   await sleep(jitter(200));

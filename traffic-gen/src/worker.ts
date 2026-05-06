@@ -2,14 +2,52 @@ import { BrowserPool } from './lib/browser-pool';
 import { createLogger } from './lib/logger';
 import { weightedPick, rand, sleep, jitter, randInt } from './lib/randomize';
 import { applyNetworkProfile, networkProfiles } from './profiles/network';
-import { deviceProfiles } from './profiles/device';
+import { deviceProfiles, type DeviceProfile } from './profiles/device';
 import { geoProfiles } from './profiles/geo';
 import { allPersonas, getPersonaByName, type PersonaContext } from './personas';
 import { getConfig } from './config';
 import { runChaosEvent } from './chaos';
 
+// ---------------------------------------------------------------------------
+// Shared counter for MAX_SESSIONS across all workers (single-process model)
+// ---------------------------------------------------------------------------
+
+let _globalSessionCount = 0;
+
+/** Atomically increment and return the new value. */
+export function incrementGlobalSessions(): number {
+  return ++_globalSessionCount;
+}
+
+export function getGlobalSessions(): number {
+  return _globalSessionCount;
+}
+
+// ---------------------------------------------------------------------------
+// Shutdown flag (set by index.ts on MAX_DURATION_S timeout)
+// ---------------------------------------------------------------------------
+
+let _shutdownRequested = false;
+
+export function requestShutdown(): void {
+  _shutdownRequested = true;
+}
+
+export function isShutdownRequested(): boolean {
+  return _shutdownRequested;
+}
+
+// ---------------------------------------------------------------------------
+// Worker loop
+// ---------------------------------------------------------------------------
+
 /**
- * A single worker loop — runs sessions indefinitely (or up to MAX_SESSIONS).
+ * A single worker loop — runs sessions until a termination condition is met:
+ * - MAX_SESSIONS_PER_WORKER reached
+ * - Global MAX_SESSIONS reached
+ * - MAX_DURATION_S timeout
+ * - SINGLE_RUN mode
+ * - Shutdown signal
  */
 export async function runWorker(workerId: number): Promise<void> {
   const config = getConfig();
@@ -18,11 +56,37 @@ export async function runWorker(workerId: number): Promise<void> {
 
   let sessionCount = 0;
 
+  // Resolve device override once
+  let deviceOverride: DeviceProfile | undefined;
+  if (config.DEVICE_OVERRIDE) {
+    deviceOverride = deviceProfiles.find(
+      (d) => d.name === config.DEVICE_OVERRIDE
+    );
+    if (deviceOverride) {
+      log.info({ device: deviceOverride.name }, 'Device override active');
+    } else {
+      log.warn(
+        { requested: config.DEVICE_OVERRIDE },
+        'Device override not found — using weighted random'
+      );
+    }
+  }
+
   try {
-    while (true) {
+    while (!_shutdownRequested) {
+      // Per-worker session limit
       if (config.MAX_SESSIONS_PER_WORKER > 0 && sessionCount >= config.MAX_SESSIONS_PER_WORKER) {
-        log.info({ sessionCount }, 'Reached max sessions, stopping');
+        log.info({ sessionCount }, 'Reached max sessions per worker, stopping');
         break;
+      }
+
+      // Global session limit
+      if (config.MAX_SESSIONS > 0) {
+        const globalCount = incrementGlobalSessions();
+        if (globalCount > config.MAX_SESSIONS) {
+          log.info({ globalCount }, 'Reached global max sessions, stopping');
+          break;
+        }
       }
 
       sessionCount++;
@@ -33,7 +97,7 @@ export async function runWorker(workerId: number): Promise<void> {
         : weightedPick(allPersonas);
 
       const network = weightedPick(networkProfiles);
-      const device = weightedPick(deviceProfiles);
+      const device = deviceOverride ?? weightedPick(deviceProfiles);
       const geo = weightedPick(geoProfiles);
 
       log.info(
@@ -43,6 +107,7 @@ export async function runWorker(workerId: number): Promise<void> {
           network: network.name,
           device: device.name,
           geo: geo.name,
+          runSource: config.RUN_SOURCE,
         },
         'Starting session'
       );
@@ -55,6 +120,7 @@ export async function runWorker(workerId: number): Promise<void> {
 
         // Create fresh context with device/geo profile
         context = await browser.newContext({
+          baseURL: config.STOREFRONT_URL,
           ...device.descriptor,
           geolocation: { latitude: geo.lat, longitude: geo.lng },
           locale: geo.locale,
@@ -66,13 +132,23 @@ export async function runWorker(workerId: number): Promise<void> {
         });
 
         page = await context.newPage();
+        page.setDefaultTimeout(30000);
+        page.setDefaultNavigationTimeout(30000);
 
         // Apply network + CPU throttling via CDP
         await applyNetworkProfile(page, network);
 
-        // Navigate to storefront base URL
+        // Navigate to storefront with run_source and persona as query params
+        // so the Embrace SDK can tag the session without a rebuild.
         const baseUrl = config.STOREFRONT_URL;
-        await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const params = new URLSearchParams({
+          run_source: config.RUN_SOURCE,
+          user_persona: persona.name,
+        });
+        await page.goto(`${baseUrl}/?${params.toString()}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 30000,
+        });
 
         // Build persona context
         const ctx: PersonaContext = {

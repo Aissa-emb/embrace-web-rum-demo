@@ -24,11 +24,16 @@ COPY ./src/frontend/utils/telemetry/ utils/telemetry/
 COPY ./src/frontend/utils/imageLoader.js utils/imageLoader.js
 COPY ./src/frontend/utils/Request.ts utils/Request.ts
 COPY ./src/frontend/utils/embrace.ts utils/embrace.ts
+COPY ./src/frontend/utils/webVitalsChaos.ts utils/webVitalsChaos.ts
 COPY ./src/frontend/utils/issueTriggers.ts utils/issueTriggers.ts
 COPY ./src/frontend/utils/controlledIssues.ts utils/controlledIssues.ts
 
 COPY ./src/frontend/next.config.js next.config.js
 COPY ./src/frontend/tsconfig.json tsconfig.json
+
+# Next.js inlines NEXT_PUBLIC_* vars at build time — must be available here
+ARG NEXT_PUBLIC_EMBRACE_APP_ID
+ENV NEXT_PUBLIC_EMBRACE_APP_ID=${NEXT_PUBLIC_EMBRACE_APP_ID}
 
 RUN npm run build
 
