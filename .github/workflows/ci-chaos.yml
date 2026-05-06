@@ -25,8 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup environment
+        run: cp storefront/.env .env
+
       - name: Start storefront stack
-        run: docker compose --env-file storefront/.env up -d
+        run: docker compose up -d
 
       - name: Wait for storefront to be healthy
         run: |
@@ -45,7 +48,7 @@ jobs:
           done
 
       - name: Start traffic generator (high chaos)
-        run: docker compose --env-file storefront/.env --profile traffic up -d traffic-gen
+        run: docker compose --profile traffic up -d traffic-gen
 
       - name: Wait for traffic generation (~10 min)
         run: |
@@ -55,7 +58,7 @@ jobs:
 
       - name: Capture traffic logs
         if: always()
-        run: docker compose --env-file storefront/.env logs traffic-gen > traffic-chaos.log 2>&1
+        run: docker compose logs traffic-gen > traffic-chaos.log 2>&1
 
       - name: Upload traffic logs
         if: always()
@@ -67,4 +70,4 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose --env-file storefront/.env --profile traffic down -v
+        run: docker compose --profile traffic down -v
