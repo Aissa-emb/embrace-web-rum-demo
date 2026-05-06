@@ -13,22 +13,17 @@ jobs:
   chaos:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      EMBRACE_APP_ID: ${{ vars.EMBRACE_APP_ID }}
+      RUN_SOURCE: chaos
+      TRAFFIC_WORKER_COUNT: 2
+      TRAFFIC_SESSION_GAP_MS: 1500
+      TRAFFIC_LOG_LEVEL: info
+      TRAFFIC_CHAOS_RATE: 0.6
+      TRAFFIC_MAX_DURATION_S: 600
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Create .env file
-        run: |
-          cp storefront/.env .env
-          cat >> .env <<EOF
-          EMBRACE_APP_ID=${{ vars.EMBRACE_APP_ID }}
-          TRAFFIC_WORKER_COUNT=2
-          TRAFFIC_SESSION_GAP_MS=1500
-          TRAFFIC_LOG_LEVEL=info
-          TRAFFIC_CHAOS_RATE=0.6
-          TRAFFIC_MAX_DURATION_S=600
-          RUN_SOURCE=chaos
-          EOF
 
       - name: Start storefront stack
         run: docker compose up -d

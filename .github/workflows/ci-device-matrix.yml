@@ -11,6 +11,15 @@ jobs:
   device:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      EMBRACE_APP_ID: ${{ vars.EMBRACE_APP_ID }}
+      RUN_SOURCE: matrix-${{ matrix.device }}
+      TRAFFIC_DEVICE_OVERRIDE: ${{ matrix.device }}
+      TRAFFIC_WORKER_COUNT: 1
+      TRAFFIC_SESSION_GAP_MS: 2000
+      TRAFFIC_LOG_LEVEL: info
+      TRAFFIC_CHAOS_RATE: 0.05
+      TRAFFIC_MAX_SESSIONS: 5
     strategy:
       matrix:
         device: [desktop-1080p, iphone-14, pixel-7, macbook-13]
@@ -19,20 +28,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Create .env file
-        run: |
-          cp storefront/.env .env
-          cat >> .env <<EOF
-          EMBRACE_APP_ID=${{ vars.EMBRACE_APP_ID }}
-          TRAFFIC_WORKER_COUNT=1
-          TRAFFIC_SESSION_GAP_MS=2000
-          TRAFFIC_LOG_LEVEL=info
-          TRAFFIC_CHAOS_RATE=0.05
-          TRAFFIC_MAX_SESSIONS=5
-          RUN_SOURCE=matrix-${{ matrix.device }}
-          TRAFFIC_DEVICE_OVERRIDE=${{ matrix.device }}
-          EOF
 
       - name: Start storefront stack
         run: docker compose up -d
