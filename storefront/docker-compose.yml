@@ -167,7 +167,7 @@ services:
 
   # Frontend (WE BUILT THIS, KEEP BUILD BLOCK)
   frontend:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend
+    image: ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-frontend
     container_name: frontend
     build:
       context: ./
@@ -175,7 +175,7 @@ services:
       args:
         - NEXT_PUBLIC_EMBRACE_APP_ID=${NEXT_PUBLIC_EMBRACE_APP_ID}
       cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-frontend
+        - ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-frontend
     deploy:
       resources:
         limits:
@@ -224,13 +224,13 @@ services:
 
   # Frontend Proxy (Envoy) (WE MODIFIED THIS, KEEP BUILD BLOCK)
   frontend-proxy:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-proxy
+    image: ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-frontend-proxy
     container_name: frontend-proxy
     build:
       context: ./
       dockerfile: ${FRONTEND_PROXY_DOCKERFILE}
       cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-frontend-proxy
+        - ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-frontend-proxy
     deploy:
       resources:
         limits:
@@ -369,13 +369,13 @@ services:
 
   # Shipping service (WE MODIFIED THIS, KEEP BUILD BLOCK)
   shipping:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-shipping
+    image: ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-shipping
     container_name: shipping
     build:
       context: ./
       dockerfile: ${SHIPPING_DOCKERFILE}
       cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-shipping
+        - ${CUSTOM_IMAGE_NAME:-ghcr.io/aissa-emb/embrace-web-rum-demo}:latest-shipping
     deploy:
       resources:
         limits:

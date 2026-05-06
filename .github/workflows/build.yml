@@ -52,6 +52,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push frontend-proxy
+        uses: docker/build-push-action@v6
+        with:
+          context: ./storefront
+          file: ./storefront/src/frontend-proxy/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/frontend-proxy:latest
+            ${{ env.IMAGE_PREFIX }}/frontend-proxy:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push shipping
+        uses: docker/build-push-action@v6
+        with:
+          context: ./storefront
+          file: ./storefront/src/shipping/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/shipping:latest
+            ${{ env.IMAGE_PREFIX }}/shipping:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   build-traffic-gen:
     runs-on: ubuntu-latest
     timeout-minutes: 15
