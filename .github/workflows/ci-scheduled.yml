@@ -23,7 +23,8 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat > .env <<EOF
+          cp storefront/.env .env
+          cat >> .env <<EOF
           EMBRACE_APP_ID=${{ vars.EMBRACE_APP_ID }}
           TRAFFIC_WORKER_COUNT=2
           TRAFFIC_SESSION_GAP_MS=2000
