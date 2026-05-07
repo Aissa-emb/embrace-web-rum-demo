@@ -49,6 +49,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/frontend:latest
             ${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}:latest-frontend
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,6 +62,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/frontend-proxy:latest
             ${{ env.IMAGE_PREFIX }}/frontend-proxy:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}:latest-frontend-proxy
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -73,6 +75,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/shipping:latest
             ${{ env.IMAGE_PREFIX }}/shipping:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}:latest-shipping
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
