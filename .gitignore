@@ -2,6 +2,10 @@
 .env
 !.env.example
 
+# Local run logs
+run_log*.txt
+logs_tmp/
+
 # Node
 node_modules/
 *.log
