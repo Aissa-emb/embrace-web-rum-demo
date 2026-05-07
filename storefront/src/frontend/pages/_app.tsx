@@ -96,7 +96,36 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Realistic TTFB simulation — server-side only
+// ---------------------------------------------------------------------------
+// Docker-internal networking gives ~0ms TTFB which looks fake.
+// Real e-commerce SSR involves DB queries, rendering, and occasional spikes.
+// This delay runs server-side only and directly increases the measured TTFB.
+
+function getRealisticServerDelay(): number {
+  // Base processing time: 120–350ms (SSR + data fetching)
+  let delay = 120 + Math.random() * 230;
+
+  // 20% chance of moderate slowdown (cache miss, slow query)
+  if (Math.random() < 0.20) {
+    delay += 150 + Math.random() * 350; // +150–500ms
+  }
+
+  // 5% chance of significant spike (cold start, GC, upstream timeout)
+  if (Math.random() < 0.05) {
+    delay += 500 + Math.random() * 1200; // +500–1700ms
+  }
+
+  return Math.round(delay);
+}
+
 MyApp.getInitialProps = async (appContext: AppContext) => {
+  // Simulate realistic server processing time (server-side only)
+  if (typeof window === 'undefined') {
+    await new Promise(resolve => setTimeout(resolve, getRealisticServerDelay()));
+  }
+
   const appProps = await App.getInitialProps(appContext);
 
   return { ...appProps };
