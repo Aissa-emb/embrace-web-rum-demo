@@ -18,7 +18,7 @@ services:
           memory: 4G
     restart: unless-stopped
     environment:
-      - STOREFRONT_URL=http://frontend-proxy:8080
+      - STOREFRONT_URL=http://www.astronomy-shop.com:8080
       - WORKER_COUNT=${TRAFFIC_WORKER_COUNT:-5}
       - SESSION_GAP_MS=${TRAFFIC_SESSION_GAP_MS:-2000}
       - LOG_LEVEL=${TRAFFIC_LOG_LEVEL:-info}

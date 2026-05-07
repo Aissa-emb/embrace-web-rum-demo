@@ -14,9 +14,13 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
         case 'GET': {
             const { productId = '' } = query;
 
-            const averageScore = await ProductReviewService.getAverageProductReviewScore(productId as string);
-
-            return res.status(200).json(averageScore);
+            try {
+                const averageScore = await ProductReviewService.getAverageProductReviewScore(productId as string);
+                return res.status(200).json(averageScore);
+            } catch {
+                // product-reviews service is not running — return default
+                return res.status(200).json("0");
+            }
         }
 
         default: {

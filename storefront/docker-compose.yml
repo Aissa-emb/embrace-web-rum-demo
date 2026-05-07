@@ -258,6 +258,10 @@ services:
       flagd-ui:
         condition: service_started
     dns_search: ""
+    networks:
+      default:
+        aliases:
+          - www.astronomy-shop.com
 
   # image-provider
   image-provider:

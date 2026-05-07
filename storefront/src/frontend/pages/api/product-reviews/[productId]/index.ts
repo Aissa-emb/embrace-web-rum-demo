@@ -14,9 +14,13 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
         case 'GET': {
             const { productId = '' } = query;
 
-            const productReviews = await ProductReviewService.getProductReviews(productId as string);
-
-            return res.status(200).json(productReviews);
+            try {
+                const productReviews = await ProductReviewService.getProductReviews(productId as string);
+                return res.status(200).json(productReviews);
+            } catch {
+                // product-reviews service is not running — return empty list
+                return res.status(200).json([]);
+            }
         }
 
         default: {
